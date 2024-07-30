@@ -55,12 +55,29 @@ namespace Unity.Netcode.Transports
             if (!_isServer)
             {
                 if (_peer != null)
-                    _outgoings.Enqueue(NetworkOutgoing.Create(_peer, payload));
+                {
+                    var flag = networkDelivery switch
+                    {
+                        NetworkDelivery.Unreliable => PacketFlag.Unreliable,
+                        NetworkDelivery.UnreliableSequenced => PacketFlag.Sequenced,
+                        _ => PacketFlag.Reliable
+                    };
+                    _outgoings.Enqueue(NetworkOutgoing.Create(_peer, payload, flag));
+                }
+
                 return;
             }
 
             if (_peers.TryGetValue(clientId - 1, out var peer))
-                _outgoings.Enqueue(NetworkOutgoing.Create(peer, payload));
+            {
+                var flag = networkDelivery switch
+                {
+                    NetworkDelivery.Unreliable => PacketFlag.Unreliable,
+                    NetworkDelivery.UnreliableSequenced => PacketFlag.Sequenced,
+                    _ => PacketFlag.Reliable
+                };
+                _outgoings.Enqueue(NetworkOutgoing.Create(peer, payload, flag));
+            }
         }
 
         public override NetcodeNetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
@@ -152,7 +169,7 @@ namespace Unity.Netcode.Transports
         {
         }
 
-        public override ulong GetCurrentRtt(ulong clientId) => _peers.TryGetValue((uint)(clientId - 1), out var peer) ? (ulong)peer.RoundTripTime : 0UL;
+        public override ulong GetCurrentRtt(ulong clientId) => _peers.TryGetValue((uint)(clientId - 1), out var peer) ? peer.RoundTripTime : 0UL;
 
         public override void Shutdown() => Interlocked.Exchange(ref _running, 0);
 
@@ -187,7 +204,7 @@ namespace Unity.Netcode.Transports
                                         var dataPacket = _serverIPEndPoint.CreateDataPacket();
                                         try
                                         {
-                                            _servicePeer.Send(dataPacket.AsSpan());
+                                            _servicePeer.Send(dataPacket);
                                         }
                                         finally
                                         {

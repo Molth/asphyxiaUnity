@@ -40,8 +40,9 @@ namespace asphyxia
         /// </summary>
         /// <param name="peer">Peer</param>
         /// <param name="data">DataPacket</param>
+        /// <param name="flag">Flag</param>
         /// <returns>NetworkOutgoing</returns>
-        public static NetworkOutgoing Create(Peer peer, Span<byte> data) => new(peer, DataPacket.Create(data));
+        public static NetworkOutgoing Create(Peer peer, Span<byte> data, PacketFlag flag) => new(peer, DataPacket.Create(data, flag));
 
         /// <summary>
         ///     Send

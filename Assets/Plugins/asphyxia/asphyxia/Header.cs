@@ -8,7 +8,7 @@ namespace asphyxia
     /// <summary>
     ///     Header
     /// </summary>
-    internal enum Header : byte
+    internal enum Header
     {
         /// <summary>
         ///     None

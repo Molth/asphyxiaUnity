@@ -7,6 +7,7 @@
 using System;
 using System.Threading;
 #endif
+using asphyxia;
 using static KCP.IKCP;
 
 #pragma warning disable CS8602
@@ -32,7 +33,7 @@ namespace KCP
         /// <summary>
         ///     Output function
         /// </summary>
-        private IKcpCallback _output;
+        private Peer _output;
 
         /// <summary>
         ///     Disposed
@@ -43,18 +44,9 @@ namespace KCP
         ///     Structure
         /// </summary>
         /// <param name="output">Output</param>
-        public Kcp(IKcpCallback output) : this(0, output)
+        public Kcp(Peer output)
         {
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="conv">ConversationId</param>
-        /// <param name="output">Output</param>
-        public Kcp(uint conv, IKcpCallback output)
-        {
-            _kcp = ikcp_create(conv);
+            _kcp = ikcp_create();
             _output = output;
         }
 
@@ -62,11 +54,6 @@ namespace KCP
         ///     Set
         /// </summary>
         public bool IsSet => _kcp != null;
-
-        /// <summary>
-        ///     Conversation id
-        /// </summary>
-        public uint ConversationId => _kcp->conv;
 
         /// <summary>
         ///     Maximum transmission unit
@@ -261,7 +248,7 @@ namespace KCP
         /// <summary>
         ///     Output function pointer
         /// </summary>
-        public IKcpCallback Output => _output;
+        public Peer Output => _output;
 
         /// <summary>
         ///     Dispose
@@ -280,7 +267,7 @@ namespace KCP
         ///     Set output
         /// </summary>
         /// <param name="output">Output</param>
-        public void SetOutput(IKcpCallback output) => _output = output;
+        public void SetOutput(Peer output) => _output = output;
 
         /// <summary>
         ///     Destructure
@@ -556,7 +543,7 @@ namespace KCP
         /// </summary>
         /// <param name="current">Timestamp</param>
         /// <param name="buffer">Buffer</param>
-        public void Update(uint current, byte* buffer) => ikcp_update(_kcp, current, buffer, _output);
+        public void Update(uint current, byte[] buffer) => ikcp_update(_kcp, current, buffer, _output);
 
         /// <summary>
         ///     Check
@@ -569,7 +556,7 @@ namespace KCP
         ///     Flush
         /// </summary>
         /// <param name="buffer">Buffer</param>
-        public void Flush(byte* buffer) => ikcp_flush(_kcp, buffer, _output);
+        public void Flush(byte[] buffer) => ikcp_flush(_kcp, buffer, _output);
 
         /// <summary>
         ///     Set maximum transmission unit

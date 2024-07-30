@@ -35,7 +35,15 @@ namespace Unity.Netcode.Transports
         public override void Send(ulong clientId, ArraySegment<byte> payload, NetworkDelivery networkDelivery)
         {
             if (_peers.TryGetValue(clientId - 1, out var peer))
-                _outgoings.Enqueue(NetworkOutgoing.Create(peer, payload));
+            {
+                var flag = networkDelivery switch
+                {
+                    NetworkDelivery.Unreliable => PacketFlag.Unreliable,
+                    NetworkDelivery.UnreliableSequenced => PacketFlag.Sequenced,
+                    _ => PacketFlag.Reliable
+                };
+                _outgoings.Enqueue(NetworkOutgoing.Create(peer, payload, flag));
+            }
         }
 
         public override NetcodeNetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
@@ -112,7 +120,7 @@ namespace Unity.Netcode.Transports
         {
         }
 
-        public override ulong GetCurrentRtt(ulong clientId) => _peers.TryGetValue((uint)(clientId - 1), out var peer) ? (ulong)peer.RoundTripTime : 0UL;
+        public override ulong GetCurrentRtt(ulong clientId) => _peers.TryGetValue((uint)(clientId - 1), out var peer) ? peer.RoundTripTime : 0UL;
 
         public override void Shutdown() => Interlocked.Exchange(ref _running, 0);
 

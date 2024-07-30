@@ -137,7 +137,10 @@ namespace Mirror
         public override void ClientSend(ArraySegment<byte> segment, int channelId = Channels.Reliable)
         {
             if (_peer != null)
-                _outgoings.Enqueue(NetworkOutgoing.Create(_peer, segment));
+            {
+                var flag = channelId == Channels.Reliable ? PacketFlag.Reliable : PacketFlag.Sequenced;
+                _outgoings.Enqueue(NetworkOutgoing.Create(_peer, segment, flag));
+            }
         }
 
         public override void ClientDisconnect() => Interlocked.Exchange(ref _running, 0);
@@ -156,7 +159,10 @@ namespace Mirror
         public override void ServerSend(int connectionId, ArraySegment<byte> segment, int channelId = Channels.Reliable)
         {
             if (_peers.TryGetValue((uint)(connectionId - 1), out var peer))
-                _outgoings.Enqueue(NetworkOutgoing.Create(peer, segment));
+            {
+                var flag = channelId == Channels.Reliable ? PacketFlag.Reliable : PacketFlag.Sequenced;
+                _outgoings.Enqueue(NetworkOutgoing.Create(peer, segment, flag));
+            }
         }
 
         public override void ServerDisconnect(int connectionId)
