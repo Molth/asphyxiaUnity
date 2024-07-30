@@ -127,17 +127,11 @@ namespace Mirror
 
         private void Service()
         {
+            var spinWait = new SpinWait();
             Interlocked.Exchange(ref _running, 1);
             while (_running == 1)
             {
-                while (_disconnectPeers.TryDequeue(out var peer))
-                    peer.DisconnectNow();
-                _host.Flush();
-                while (_outgoings.TryDequeue(out var outgoing))
-                    outgoing.Send();
-                _host.Flush();
                 _host.Service();
-                _host.Flush();
                 while (_host.CheckEvents(out var networkEvent))
                 {
                     if (networkEvent.Peer.IPEndPoint.Equals(_serviceIPEndPoint))
@@ -241,14 +235,19 @@ namespace Mirror
                                     break;
                             }
                         }
-
-                        continue;
                     }
-
-                    _networkEvents.Enqueue(networkEvent);
+                    else
+                    {
+                        _networkEvents.Enqueue(networkEvent);
+                    }
                 }
 
-                Thread.Sleep(1);
+                while (_disconnectPeers.TryDequeue(out var peer))
+                    peer.DisconnectNow();
+                while (_outgoings.TryDequeue(out var outgoing))
+                    outgoing.Send();
+                _host.Flush();
+                spinWait.SpinOnce();
             }
 
             _servicePeer?.DisconnectNow();
