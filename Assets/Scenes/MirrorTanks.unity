@@ -539,11 +539,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1282001517}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a44ab4605baa439d9221799381f40dc3, type: 3}
+  m_Script: {fileID: 11500000, guid: 3a379a329a6e9b348976dacf18a4607f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ServiceIPAddress: 127.0.0.1
-  ServicePort: 7778
   MaxPeers: 100
 --- !u!1 &1458789072
 GameObject:

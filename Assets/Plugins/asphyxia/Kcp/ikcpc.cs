@@ -1160,11 +1160,7 @@ namespace KCP
             return 0;
         }
 
-        public static void ikcp_interval(IKCPCB* kcp, int interval)
-        {
-            interval = _iclamp_(interval, INTERVAL_MIN, INTERVAL_LIMIT);
-            kcp->interval = (uint)interval;
-        }
+        public static void ikcp_interval(IKCPCB* kcp, int interval) => kcp->interval = (uint)interval;
 
         public static void ikcp_nodelay(IKCPCB* kcp, int nodelay, int interval, int resend, int nc)
         {
@@ -1183,8 +1179,6 @@ namespace KCP
 
         public static void ikcp_wndsize(IKCPCB* kcp, int sndwnd, int rcvwnd)
         {
-            sndwnd = _iclamp_(sndwnd, WND_SND, 2147483647);
-            rcvwnd = _iclamp_(rcvwnd, WND_RCV, 2147483647);
             kcp->snd_wnd = (uint)sndwnd;
             kcp->rcv_wnd = (uint)rcvwnd;
         }
@@ -1197,10 +1191,6 @@ namespace KCP
 
         public static void ikcp_streammode(IKCPCB* kcp, int stream) => kcp->stream = stream == 1 ? 1 : 0;
 
-        public static void ikcp_minrto(IKCPCB* kcp, int minrto)
-        {
-            minrto = _iclamp_(minrto, INTERVAL_MIN, RTO_MAX);
-            kcp->rx_minrto = minrto;
-        }
+        public static void ikcp_minrto(IKCPCB* kcp, int minrto) => kcp->rx_minrto = minrto;
     }
 }

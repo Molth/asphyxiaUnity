@@ -173,7 +173,7 @@ namespace asphyxia
             _state = state;
             _kcp = new Kcp(this);
             _kcp.SetNoDelay(KCP_NO_DELAY, KCP_FLUSH_INTERVAL_MIN, KCP_FAST_RESEND, KCP_NO_CONGESTION_WINDOW);
-            _kcp.SetWindowSize(KCP_WINDOW_SIZE_MIN, KCP_WINDOW_SIZE_MIN);
+            _kcp.SetWindowSize(KCP_WINDOW_SIZE_MIN, (KCP_WINDOW_SIZE_MIN + (KCP_WINDOW_SIZE_MIN << 1)) >> 1);
             _kcp.SetMtu(KCP_MAXIMUM_TRANSMISSION_UNIT);
             _kcp.SetMinrto(KCP_RTO_MIN);
             _lastSendTimestamp = current + PEER_PING_INTERVAL;
@@ -541,23 +541,24 @@ namespace asphyxia
                 if (_lastThrottleTimestamp <= current)
                 {
                     _lastThrottleTimestamp = current + PEER_THROTTLE_INTERVAL;
-                    var rtt = RoundTripTime;
-                    var loss = PacketLoss;
-                    var rto = (int)(1.25f * rtt * (1.0f + loss));
+                    var rtt = _kcp.RxSrtt;
+                    var sent = _kcp.SendNext - _kcp.SendUna;
+                    var loss = sent == 0 ? 0f : (float)(sent - _kcp.AckCount) / sent;
+                    var rto = (int)((rtt + (rtt >> 2)) * (1.0f + loss));
+                    var variance = rtt / (100.0f + rtt) + loss;
+                    var interval = (int)(KCP_FLUSH_INTERVAL_MIN * (1.0f + variance));
+                    var windowSize = (int)(KCP_WINDOW_SIZE_MAX * (1.0f - variance));
                     if (rto < KCP_RTO_MIN)
                         rto = KCP_RTO_MIN;
                     else if (rto > KCP_RTO_MAX)
                         rto = KCP_RTO_MAX;
-                    var variance = rtt / (100.0f + rtt) + loss;
-                    var interval = (int)(KCP_FLUSH_INTERVAL_MIN * (1.0f + variance));
                     if (interval > KCP_FLUSH_INTERVAL_MAX)
                         interval = KCP_FLUSH_INTERVAL_MAX;
-                    var windowSize = (int)(KCP_WINDOW_SIZE_MAX * (1.0f - variance));
                     if (windowSize < KCP_WINDOW_SIZE_MIN)
                         windowSize = KCP_WINDOW_SIZE_MIN;
                     _kcp.SetMinrto(rto);
                     _kcp.SetInterval(interval);
-                    _kcp.SetWindowSize(windowSize, windowSize);
+                    _kcp.SetWindowSize(windowSize, (windowSize + (windowSize << 1)) >> 1);
                 }
             }
         }
