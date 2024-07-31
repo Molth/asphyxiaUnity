@@ -114,6 +114,11 @@ namespace asphyxia
         private uint _lastReceiveTimestamp;
 
         /// <summary>
+        ///     Last throttle timestamp
+        /// </summary>
+        private uint _lastThrottleTimestamp;
+
+        /// <summary>
         ///     Peer state
         /// </summary>
         private PeerState _state;
@@ -167,11 +172,12 @@ namespace asphyxia
             _unmanagedBuffer = unmanagedBuffer;
             _state = state;
             _kcp = new Kcp(this);
-            _kcp.SetNoDelay(KCP_NO_DELAY, KCP_FLUSH_INTERVAL, KCP_FAST_RESEND, KCP_NO_CONGESTION_WINDOW);
-            _kcp.SetWindowSize(KCP_WINDOW_SIZE, KCP_WINDOW_SIZE);
+            _kcp.SetNoDelay(KCP_NO_DELAY, KCP_FLUSH_INTERVAL_MIN, KCP_FAST_RESEND, KCP_NO_CONGESTION_WINDOW);
+            _kcp.SetWindowSize(KCP_WINDOW_SIZE_MIN, KCP_WINDOW_SIZE_MIN);
             _kcp.SetMtu(KCP_MAXIMUM_TRANSMISSION_UNIT);
-            _lastSendTimestamp = current;
-            _lastReceiveTimestamp = current;
+            _kcp.SetMinrto(KCP_RTO_MIN);
+            _lastSendTimestamp = current + PEER_PING_INTERVAL;
+            _lastReceiveTimestamp = current + PEER_RECEIVE_TIMEOUT;
         }
 
         /// <summary>
@@ -219,7 +225,7 @@ namespace asphyxia
         internal void Output(int length, uint current)
         {
             _managedBuffer[0] = _sessionId;
-            _lastSendTimestamp = current;
+            _lastSendTimestamp = current + PEER_PING_INTERVAL;
             _managedBuffer[length] = (byte)Reliable;
             _host.Insert(EndPoint, length + 1);
             if (_disconnecting && _kcp.SendQueueCount == 0)
@@ -240,7 +246,7 @@ namespace asphyxia
         {
             if (_managedBuffer[0] != _sessionId || _kcp.Input(_managedBuffer, length) != 0 || _state != Connected)
                 return;
-            _lastReceiveTimestamp = current;
+            _lastReceiveTimestamp = current + PEER_RECEIVE_TIMEOUT;
         }
 
         /// <summary>
@@ -446,7 +452,7 @@ namespace asphyxia
         /// <param name="current">Timestamp</param>
         internal void Service(uint current)
         {
-            if (_lastReceiveTimestamp + PEER_RECEIVE_TIMEOUT <= current)
+            if (_lastReceiveTimestamp <= current)
             {
                 Timeout();
                 return;
@@ -484,6 +490,7 @@ namespace asphyxia
                         if (_state != Connecting)
                             goto error;
                         _state = Connected;
+                        _lastThrottleTimestamp = current + PEER_THROTTLE_INTERVAL;
                         _host.Insert(new NetworkEvent(NetworkEventType.Connect, this));
                         _unmanagedBuffer[0] = (byte)ConnectEstablish;
                         KcpSend(_unmanagedBuffer, 1);
@@ -492,6 +499,7 @@ namespace asphyxia
                         if (_state != ConnectAcknowledging)
                             goto error;
                         _state = Connected;
+                        _lastThrottleTimestamp = current + PEER_THROTTLE_INTERVAL;
                         _host.Insert(new NetworkEvent(NetworkEventType.Connect, this));
                         continue;
                     case (byte)Data:
@@ -521,11 +529,36 @@ namespace asphyxia
                 }
             }
 
-            if (_state == Connected && _lastSendTimestamp + PEER_PING_INTERVAL <= current)
+            if (_state == Connected)
             {
-                _lastSendTimestamp = current;
-                _unmanagedBuffer[0] = (byte)Ping;
-                KcpSend(_unmanagedBuffer, 1);
+                if (_lastSendTimestamp <= current)
+                {
+                    _lastSendTimestamp = current + PEER_PING_INTERVAL;
+                    _unmanagedBuffer[0] = (byte)Ping;
+                    KcpSend(_unmanagedBuffer, 1);
+                }
+
+                if (_lastThrottleTimestamp <= current)
+                {
+                    _lastThrottleTimestamp = current + PEER_THROTTLE_INTERVAL;
+                    var rtt = RoundTripTime;
+                    var loss = PacketLoss;
+                    var rto = (int)(1.25f * rtt * (1.0f + loss));
+                    if (rto < KCP_RTO_MIN)
+                        rto = KCP_RTO_MIN;
+                    else if (rto > KCP_RTO_MAX)
+                        rto = KCP_RTO_MAX;
+                    var variance = rtt / (100.0f + rtt) + loss;
+                    var interval = (int)(KCP_FLUSH_INTERVAL_MIN * (1.0f + variance));
+                    if (interval > KCP_FLUSH_INTERVAL_MAX)
+                        interval = KCP_FLUSH_INTERVAL_MAX;
+                    var windowSize = (int)(KCP_WINDOW_SIZE_MAX * (1.0f - variance));
+                    if (windowSize < KCP_WINDOW_SIZE_MIN)
+                        windowSize = KCP_WINDOW_SIZE_MIN;
+                    _kcp.SetMinrto(rto);
+                    _kcp.SetInterval(interval);
+                    _kcp.SetWindowSize(windowSize, windowSize);
+                }
             }
         }
 

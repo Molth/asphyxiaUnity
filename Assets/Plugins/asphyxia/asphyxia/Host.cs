@@ -208,8 +208,8 @@ namespace asphyxia
                 if (maxPeers <= 0)
                     maxPeers = 1;
                 var socketBufferSize = maxPeers * SOCKET_BUFFER_SIZE;
-                if (socketBufferSize < 8388608)
-                    socketBufferSize = 8388608;
+                if (socketBufferSize < 16777216)
+                    socketBufferSize = 16777216;
                 _socket.SendBufferSize = socketBufferSize;
                 _socket.ReceiveBufferSize = socketBufferSize;
                 _socket.Blocking = false;
@@ -478,7 +478,7 @@ namespace asphyxia
             }
             catch
             {
-                //
+                _socket.Poll(0, SelectMode.SelectWrite);
             }
         }
 

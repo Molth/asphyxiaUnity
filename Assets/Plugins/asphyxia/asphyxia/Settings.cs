@@ -23,6 +23,11 @@ namespace asphyxia
         public const int PEER_PING_INTERVAL = 500;
 
         /// <summary>
+        ///     Peer throttle interval
+        /// </summary>
+        public const int PEER_THROTTLE_INTERVAL = 100;
+
+        /// <summary>
         ///     Peer receive timeout
         /// </summary>
         public const int PEER_RECEIVE_TIMEOUT = 5000;
@@ -48,9 +53,14 @@ namespace asphyxia
         public const int KCP_MAXIMUM_TRANSMISSION_UNIT = (int)MTU_DEF - KCP_REVERSED_SIZE;
 
         /// <summary>
-        ///     Kcp window size
+        ///     Kcp window size min
         /// </summary>
-        public const int KCP_WINDOW_SIZE = 1024;
+        public const int KCP_WINDOW_SIZE_MIN = 1024;
+
+        /// <summary>
+        ///     Kcp window size max
+        /// </summary>
+        public const int KCP_WINDOW_SIZE_MAX = 4608;
 
         /// <summary>
         ///     Kcp no delay
@@ -58,18 +68,33 @@ namespace asphyxia
         public const int KCP_NO_DELAY = 1;
 
         /// <summary>
-        ///     Kcp flush interval
+        ///     Kcp flush interval min
         /// </summary>
-        public const int KCP_FLUSH_INTERVAL = 1;
+        public const int KCP_FLUSH_INTERVAL_MIN = 10;
+
+        /// <summary>
+        ///     Kcp flush interval max
+        /// </summary>
+        public const int KCP_FLUSH_INTERVAL_MAX = 40;
 
         /// <summary>
         ///     Kcp fast resend trigger count
         /// </summary>
-        public const int KCP_FAST_RESEND = 0;
+        public const int KCP_FAST_RESEND = 2;
 
         /// <summary>
         ///     Kcp no congestion window
         /// </summary>
         public const int KCP_NO_CONGESTION_WINDOW = 1;
+
+        /// <summary>
+        ///     Kcp retransmission timeout min
+        /// </summary>
+        public const int KCP_RTO_MIN = 30;
+
+        /// <summary>
+        ///     Kcp retransmission timeout max
+        /// </summary>
+        public const int KCP_RTO_MAX = 120;
     }
 }
