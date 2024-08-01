@@ -64,6 +64,8 @@ namespace NanoSockets
         /// <param name="src">Buffer</param>
         public NanoIPAddress(Span<byte> src)
         {
+            if (src.Length < 8)
+                throw new ArgumentOutOfRangeException(src.Length.ToString());
             _high = Unsafe.ReadUnaligned<ulong>(ref src[0]);
             _low = Unsafe.ReadUnaligned<ulong>(ref src[8]);
         }
