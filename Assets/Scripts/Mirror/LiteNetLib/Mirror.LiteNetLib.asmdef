@@ -1,0 +1,17 @@
+{
+    "name": "Mirror.LiteNetLib",
+    "rootNamespace": "",
+    "references": [
+        "GUID:7c9e437e730495345b50a609f6e2194e",
+        "GUID:30817c1a0e6d646d99c048fc403f5979"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

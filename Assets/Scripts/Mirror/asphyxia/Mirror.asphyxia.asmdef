@@ -1,0 +1,17 @@
+{
+    "name": "Mirror.asphyxia",
+    "rootNamespace": "",
+    "references": [
+        "GUID:228af557903a42d47b2a6f7ed29cfd99",
+        "GUID:30817c1a0e6d646d99c048fc403f5979"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
