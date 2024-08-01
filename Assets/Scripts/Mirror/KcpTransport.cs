@@ -51,7 +51,8 @@ namespace Mirror
                         case NetworkEventType.Data:
                             var packet = networkEvent.Packet;
                             packet.CopyTo(_receiveBuffer);
-                            OnClientDataReceived(new ArraySegment<byte>(_receiveBuffer, 0, packet.Length), 0);
+                            var channelId = packet.Flags == PacketFlag.Reliable ? Channels.Reliable : Channels.Unreliable;
+                            OnClientDataReceived(new ArraySegment<byte>(_receiveBuffer, 0, packet.Length), channelId);
                             packet.Dispose();
                             break;
                         case NetworkEventType.Timeout:
@@ -79,7 +80,8 @@ namespace Mirror
                         case NetworkEventType.Data:
                             var packet = networkEvent.Packet;
                             packet.CopyTo(_receiveBuffer);
-                            OnServerDataReceived((int)(id + 1), new ArraySegment<byte>(_receiveBuffer, 0, packet.Length), 0);
+                            var channelId = packet.Flags == PacketFlag.Reliable ? Channels.Reliable : Channels.Unreliable;
+                            OnServerDataReceived((int)(id + 1), new ArraySegment<byte>(_receiveBuffer, 0, packet.Length), channelId);
                             packet.Dispose();
                             break;
                         case NetworkEventType.Timeout:
