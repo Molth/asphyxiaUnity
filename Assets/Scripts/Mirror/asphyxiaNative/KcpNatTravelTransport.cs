@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using asphyxia;
 using NanoSockets;
@@ -164,18 +163,7 @@ namespace Mirror.Native
                                         var span = packet.AsSpan();
                                         var isLocalEndPoint = span[0] == 0;
                                         span = span[1..];
-                                        NanoIPAddress address;
-                                        try
-                                        {
-                                            address = new NanoIPAddress(span[..^4]);
-                                        }
-                                        catch
-                                        {
-                                            break;
-                                        }
-
-                                        var port = Unsafe.ReadUnaligned<int>(ref span[^4]);
-                                        var ipEndPoint = new NanoIPEndPoint(address, (ushort)port);
+                                        var ipEndPoint = new NanoIPEndPoint(span);
                                         if (isLocalEndPoint)
                                             _localEndPoint = ipEndPoint.ToString();
                                     }
@@ -206,18 +194,7 @@ namespace Mirror.Native
                                         var span = packet.AsSpan();
                                         var isLocalEndPoint = span[0] == 0;
                                         span = span[1..];
-                                        NanoIPAddress address;
-                                        try
-                                        {
-                                            address = new NanoIPAddress(span[..^4]);
-                                        }
-                                        catch
-                                        {
-                                            break;
-                                        }
-
-                                        var port = Unsafe.ReadUnaligned<int>(ref span[^4]);
-                                        var ipEndPoint = new NanoIPEndPoint(address, (ushort)port);
+                                        var ipEndPoint = new NanoIPEndPoint(span);
                                         if (isLocalEndPoint)
                                             _localEndPoint = ipEndPoint.ToString();
                                         else

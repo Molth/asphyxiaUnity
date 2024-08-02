@@ -76,6 +76,39 @@ namespace NanoSockets
         }
 
         /// <summary>
+        ///     Structure
+        /// </summary>
+        /// <param name="src">Buffer</param>
+        public NanoIPEndPoint(Span<byte> src)
+        {
+            if (src.Length < 18)
+                throw new ArgumentOutOfRangeException(src.Length.ToString());
+            fixed (byte* ptr = &src[0])
+            {
+                _high = *(ulong*)ptr;
+                _low = *(ulong*)(ptr + 8);
+                _port = *(ushort*)(ptr + 16);
+            }
+        }
+
+        /// <summary>
+        ///     Structure
+        /// </summary>
+        /// <param name="src">Buffer</param>
+        public NanoIPEndPoint(ReadOnlySpan<byte> src)
+        {
+            if (src.Length < 18)
+                throw new ArgumentOutOfRangeException(src.Length.ToString());
+            var span = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(src), src.Length);
+            fixed (byte* ptr = &span[0])
+            {
+                _high = *(ulong*)ptr;
+                _low = *(ulong*)(ptr + 8);
+                _port = *(ushort*)(ptr + 16);
+            }
+        }
+
+        /// <summary>
         ///     Equals
         /// </summary>
         /// <param name="other">IPEndPoint</param>
@@ -119,6 +152,21 @@ namespace NanoSockets
             *(ulong*)dst = _high;
             *(ulong*)(dst + 8) = _low;
             return new IPEndPoint(new IPAddress(new Span<byte>(dst, 16)), _port);
+        }
+
+        /// <summary>
+        ///     Copy to destination
+        /// </summary>
+        /// <param name="destination">Destination</param>
+        /// <returns>Copied</returns>
+        public void WriteBytes(Span<byte> destination)
+        {
+            fixed (byte* ptr = &destination[0])
+            {
+                *(ulong*)ptr = _high;
+                *(ulong*)(ptr + 8) = _low;
+                *(ushort*)(ptr + 16) = _port;
+            }
         }
 
         /// <summary>

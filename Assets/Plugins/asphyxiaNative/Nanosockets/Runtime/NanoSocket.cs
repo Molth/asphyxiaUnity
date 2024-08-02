@@ -36,14 +36,14 @@ namespace NanoSockets
         private bool _willBlock = true;
 
         /// <summary>
+        ///     Is created
+        /// </summary>
+        public bool IsSet => _handle != 0L;
+
+        /// <summary>
         ///     Handle
         /// </summary>
         public long Handle => _handle;
-
-        /// <summary>
-        ///     Is created
-        /// </summary>
-        public bool IsSet => _handle > 0L;
 
         /// <summary>
         ///     Blocking
@@ -142,7 +142,7 @@ namespace NanoSockets
         /// <summary>
         ///     Create
         /// </summary>
-        public bool Create() => Create(1024, 1024);
+        public bool Create() => Create(0, 0);
 
         /// <summary>
         ///     Create
@@ -180,14 +180,14 @@ namespace NanoSockets
         /// </summary>
         /// <param name="localEndPoint"></param>
         /// <returns>Local endPoint</returns>
-        public bool Bind(ref NanoIPEndPoint localEndPoint) => NanoUdp.Bind(_handle, ref localEndPoint) == 0;
+        public bool Bind(NanoIPEndPoint localEndPoint) => NanoUdp.Bind(_handle, ref localEndPoint) == 0;
 
         /// <summary>
         ///     Connect
         /// </summary>
         /// <param name="remoteEndPoint"></param>
         /// <returns>EndPoint</returns>
-        public bool Connect(ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Connect(_handle, ref remoteEndPoint) == 0;
+        public bool Connect(NanoIPEndPoint remoteEndPoint) => NanoUdp.Connect(_handle, ref remoteEndPoint) == 0;
 
         /// <summary>
         ///     Poll
@@ -206,8 +206,16 @@ namespace NanoSockets
         ///     Send
         /// </summary>
         /// <param name="buffer">Buffer</param>
+        /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte[] buffer, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Send(_handle, ref remoteEndPoint, buffer, buffer.Length);
+        public int SendTo(byte* buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Send(_handle, ref remoteEndPoint, buffer, size);
+
+        /// <summary>
+        ///     Send
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        public int SendTo(byte[] buffer, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Send(_handle, ref remoteEndPoint, buffer, buffer.Length);
 
         /// <summary>
         ///     Send
@@ -215,7 +223,7 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte[] buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Send(_handle, ref remoteEndPoint, buffer, size);
+        public int SendTo(byte[] buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Send(_handle, ref remoteEndPoint, buffer, size);
 
         /// <summary>
         ///     Send
@@ -224,7 +232,7 @@ namespace NanoSockets
         /// <param name="offset">Offset</param>
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte[] buffer, int offset, int size, ref NanoIPEndPoint remoteEndPoint)
+        public int SendTo(byte[] buffer, int offset, int size, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* src = &buffer[offset])
                 return NanoUdp.Send(_handle, ref remoteEndPoint, src, size);
@@ -235,7 +243,7 @@ namespace NanoSockets
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(ReadOnlySpan<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
+        public int SendTo(ReadOnlySpan<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* src = &buffer[0])
                 return NanoUdp.Send(_handle, ref remoteEndPoint, src, buffer.Length);
@@ -246,7 +254,7 @@ namespace NanoSockets
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(ReadOnlyMemory<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
+        public int SendTo(ReadOnlyMemory<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* src = &buffer.Span[0])
                 return NanoUdp.Send(_handle, ref remoteEndPoint, src, buffer.Length);
@@ -257,7 +265,7 @@ namespace NanoSockets
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(ArraySegment<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
+        public int SendTo(ArraySegment<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* src = &buffer.Array[buffer.Offset])
                 return NanoUdp.Send(_handle, ref remoteEndPoint, src, buffer.Count);
@@ -269,113 +277,14 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte* buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Send(_handle, ref remoteEndPoint, buffer, size);
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte[] buffer, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            count = NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, buffer.Length);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="size">Size</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte[] buffer, int size, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            count = NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, size);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="offset">Offset</param>
-        /// <param name="size">Size</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte[] buffer, int offset, int size, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer[offset])
-                count = NanoUdp.Receive(_handle, ref remoteEndPoint, dest, size);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(Span<byte> buffer, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer[0])
-                count = NanoUdp.Receive(_handle, ref remoteEndPoint, dest, buffer.Length);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(Memory<byte> buffer, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer.Span[0])
-                count = NanoUdp.Receive(_handle, ref remoteEndPoint, dest, buffer.Length);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(ArraySegment<byte> buffer, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer.Array[buffer.Offset])
-                count = NanoUdp.Receive(_handle, ref remoteEndPoint, dest, buffer.Count);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="size">Size</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte* buffer, int size, out int count, ref NanoIPEndPoint remoteEndPoint)
-        {
-            count = NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, size);
-            return count > 0;
-        }
+        public int SendTo(byte* buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Send(_handle, remoteEndPoint, buffer, size);
 
         /// <summary>
         ///     Send
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte[] buffer, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Send(_handle, remoteEndPoint, buffer, buffer.Length);
+        public int SendTo(byte[] buffer, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Send(_handle, remoteEndPoint, buffer, buffer.Length);
 
         /// <summary>
         ///     Send
@@ -383,7 +292,7 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte[] buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Send(_handle, remoteEndPoint, buffer, size);
+        public int SendTo(byte[] buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Send(_handle, remoteEndPoint, buffer, size);
 
         /// <summary>
         ///     Send
@@ -392,7 +301,7 @@ namespace NanoSockets
         /// <param name="offset">Offset</param>
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte[] buffer, int offset, int size, NanoIPEndPoint* remoteEndPoint)
+        public int SendTo(byte[] buffer, int offset, int size, NanoIPEndPoint* remoteEndPoint)
         {
             fixed (byte* src = &buffer[offset])
                 return NanoUdp.Send(_handle, remoteEndPoint, src, size);
@@ -403,7 +312,7 @@ namespace NanoSockets
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(ReadOnlySpan<byte> buffer, NanoIPEndPoint* remoteEndPoint)
+        public int SendTo(ReadOnlySpan<byte> buffer, NanoIPEndPoint* remoteEndPoint)
         {
             fixed (byte* src = &buffer[0])
                 return NanoUdp.Send(_handle, remoteEndPoint, src, buffer.Length);
@@ -414,7 +323,7 @@ namespace NanoSockets
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(ReadOnlyMemory<byte> buffer, NanoIPEndPoint* remoteEndPoint)
+        public int SendTo(ReadOnlyMemory<byte> buffer, NanoIPEndPoint* remoteEndPoint)
         {
             fixed (byte* src = &buffer.Span[0])
                 return NanoUdp.Send(_handle, remoteEndPoint, src, buffer.Length);
@@ -425,118 +334,20 @@ namespace NanoSockets
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(ArraySegment<byte> buffer, NanoIPEndPoint* remoteEndPoint)
+        public int SendTo(ArraySegment<byte> buffer, NanoIPEndPoint* remoteEndPoint)
         {
             fixed (byte* src = &buffer.Array[buffer.Offset])
                 return NanoUdp.Send(_handle, remoteEndPoint, src, buffer.Count);
         }
 
         /// <summary>
-        ///     Send
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="size">Size</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        public int Send(byte* buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Send(_handle, remoteEndPoint, buffer, size);
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte[] buffer, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            count = NanoUdp.Receive(_handle, remoteEndPoint, buffer, buffer.Length);
-            return count > 0;
-        }
-
-        /// <summary>
         ///     Receive
         /// </summary>
         /// <param name="buffer">Buffer</param>
         /// <param name="size">Size</param>
-        /// <param name="count">Count</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public bool Receive(byte[] buffer, int size, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            count = NanoUdp.Receive(_handle, remoteEndPoint, buffer, size);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="offset">Offset</param>
-        /// <param name="size">Size</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte[] buffer, int offset, int size, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer[offset])
-                count = NanoUdp.Receive(_handle, remoteEndPoint, dest, size);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(Span<byte> buffer, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer[0])
-                count = NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Length);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(Memory<byte> buffer, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer.Span[0])
-                count = NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Length);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(ArraySegment<byte> buffer, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer.Array[buffer.Offset])
-                count = NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Count);
-            return count > 0;
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="size">Size</param>
-        /// <param name="count">Count</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public bool Receive(byte* buffer, int size, out int count, NanoIPEndPoint* remoteEndPoint)
-        {
-            count = NanoUdp.Receive(_handle, remoteEndPoint, buffer, size);
-            return count > 0;
-        }
+        public int ReceiveFrom(byte* buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, size);
 
         /// <summary>
         ///     Receive
@@ -544,7 +355,7 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(byte[] buffer, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Receive(_handle, remoteEndPoint, buffer, buffer.Length);
+        public int ReceiveFrom(byte[] buffer, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, buffer.Length);
 
         /// <summary>
         ///     Receive
@@ -553,7 +364,7 @@ namespace NanoSockets
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(byte[] buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Receive(_handle, remoteEndPoint, buffer, size);
+        public int ReceiveFrom(byte[] buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, size);
 
         /// <summary>
         ///     Receive
@@ -563,83 +374,7 @@ namespace NanoSockets
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(byte[] buffer, int offset, int size, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer[offset])
-                return NanoUdp.Receive(_handle, remoteEndPoint, dest, size);
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(Span<byte> buffer, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer[0])
-                return NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Length);
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(Memory<byte> buffer, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer.Span[0])
-                return NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Length);
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(ArraySegment<byte> buffer, NanoIPEndPoint* remoteEndPoint)
-        {
-            fixed (byte* dest = &buffer.Array[buffer.Offset])
-                return NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Count);
-        }
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="size">Size</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(byte* buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Receive(_handle, remoteEndPoint, buffer, size);
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(byte[] buffer, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, buffer.Length);
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="size">Size</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(byte[] buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, size);
-
-        /// <summary>
-        ///     Receive
-        /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="offset">Offset</param>
-        /// <param name="size">Size</param>
-        /// <param name="remoteEndPoint">EndPoint</param>
-        /// <returns>Received</returns>
-        public int Receive(byte[] buffer, int offset, int size, ref NanoIPEndPoint remoteEndPoint)
+        public int ReceiveFrom(byte[] buffer, int offset, int size, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* dest = &buffer[offset])
                 return NanoUdp.Receive(_handle, ref remoteEndPoint, dest, size);
@@ -651,7 +386,7 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(Span<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
+        public int ReceiveFrom(Span<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* dest = &buffer[0])
                 return NanoUdp.Receive(_handle, ref remoteEndPoint, dest, buffer.Length);
@@ -663,7 +398,7 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(Memory<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
+        public int ReceiveFrom(Memory<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* dest = &buffer.Span[0])
                 return NanoUdp.Receive(_handle, ref remoteEndPoint, dest, buffer.Length);
@@ -675,7 +410,7 @@ namespace NanoSockets
         /// <param name="buffer">Buffer</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(ArraySegment<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
+        public int ReceiveFrom(ArraySegment<byte> buffer, ref NanoIPEndPoint remoteEndPoint)
         {
             fixed (byte* dest = &buffer.Array[buffer.Offset])
                 return NanoUdp.Receive(_handle, ref remoteEndPoint, dest, buffer.Count);
@@ -688,7 +423,74 @@ namespace NanoSockets
         /// <param name="size">Size</param>
         /// <param name="remoteEndPoint">EndPoint</param>
         /// <returns>Received</returns>
-        public int Receive(byte* buffer, int size, ref NanoIPEndPoint remoteEndPoint) => NanoUdp.Receive(_handle, ref remoteEndPoint, buffer, size);
+        public int ReceiveFrom(byte* buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Receive(_handle, remoteEndPoint, buffer, size);
+
+        /// <summary>
+        ///     Receive
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        /// <returns>Received</returns>
+        public int ReceiveFrom(byte[] buffer, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Receive(_handle, remoteEndPoint, buffer, buffer.Length);
+
+        /// <summary>
+        ///     Receive
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="size">Size</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        /// <returns>Received</returns>
+        public int ReceiveFrom(byte[] buffer, int size, NanoIPEndPoint* remoteEndPoint) => NanoUdp.Receive(_handle, remoteEndPoint, buffer, size);
+
+        /// <summary>
+        ///     Receive
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="offset">Offset</param>
+        /// <param name="size">Size</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        /// <returns>Received</returns>
+        public int ReceiveFrom(byte[] buffer, int offset, int size, NanoIPEndPoint* remoteEndPoint)
+        {
+            fixed (byte* dest = &buffer[offset])
+                return NanoUdp.Receive(_handle, remoteEndPoint, dest, size);
+        }
+
+        /// <summary>
+        ///     Receive
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        /// <returns>Received</returns>
+        public int ReceiveFrom(Span<byte> buffer, NanoIPEndPoint* remoteEndPoint)
+        {
+            fixed (byte* dest = &buffer[0])
+                return NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Length);
+        }
+
+        /// <summary>
+        ///     Receive
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        /// <returns>Received</returns>
+        public int ReceiveFrom(Memory<byte> buffer, NanoIPEndPoint* remoteEndPoint)
+        {
+            fixed (byte* dest = &buffer.Span[0])
+                return NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Length);
+        }
+
+        /// <summary>
+        ///     Receive
+        /// </summary>
+        /// <param name="buffer">Buffer</param>
+        /// <param name="remoteEndPoint">EndPoint</param>
+        /// <returns>Received</returns>
+        public int ReceiveFrom(ArraySegment<byte> buffer, NanoIPEndPoint* remoteEndPoint)
+        {
+            fixed (byte* dest = &buffer.Array[buffer.Offset])
+                return NanoUdp.Receive(_handle, remoteEndPoint, dest, buffer.Count);
+        }
 
         /// <summary>
         ///     Set option

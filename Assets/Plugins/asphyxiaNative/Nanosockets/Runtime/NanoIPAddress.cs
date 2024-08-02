@@ -7,7 +7,6 @@
 using System;
 #endif
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CS8632
@@ -64,10 +63,29 @@ namespace NanoSockets
         /// <param name="src">Buffer</param>
         public NanoIPAddress(Span<byte> src)
         {
-            if (src.Length < 8)
+            if (src.Length < 16)
                 throw new ArgumentOutOfRangeException(src.Length.ToString());
-            _high = Unsafe.ReadUnaligned<ulong>(ref src[0]);
-            _low = Unsafe.ReadUnaligned<ulong>(ref src[8]);
+            fixed (byte* ptr = &src[0])
+            {
+                _high = *(ulong*)ptr;
+                _low = *(ulong*)(ptr + 8);
+            }
+        }
+
+        /// <summary>
+        ///     Structure
+        /// </summary>
+        /// <param name="src">Buffer</param>
+        public NanoIPAddress(ReadOnlySpan<byte> src)
+        {
+            if (src.Length < 16)
+                throw new ArgumentOutOfRangeException(src.Length.ToString());
+            var span = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(src), src.Length);
+            fixed (byte* ptr = &span[0])
+            {
+                _high = *(ulong*)ptr;
+                _low = *(ulong*)(ptr + 8);
+            }
         }
 
         /// <summary>
@@ -101,13 +119,13 @@ namespace NanoSockets
         /// </summary>
         /// <param name="destination">Destination</param>
         /// <returns>Copied</returns>
-        public bool TryWriteBytes(Span<byte> destination)
+        public void WriteBytes(Span<byte> destination)
         {
-            if (!IsSet || destination.Length < 16)
-                return false;
-            Unsafe.WriteUnaligned(ref destination[0], _high);
-            Unsafe.WriteUnaligned(ref destination[8], _low);
-            return true;
+            fixed (byte* ptr = &destination[0])
+            {
+                *(ulong*)ptr = _high;
+                *(ulong*)(ptr + 8) = _low;
+            }
         }
     }
 }

@@ -159,11 +159,11 @@ namespace asphyxia
                     return SocketError.InvalidArgument;
                 if (ipv6 && !Socket.OSSupportsIPv6)
                     return SocketError.SocketNotSupported;
-                _socket.Create(0, 0);
+                _socket.Create();
                 var localEndPoint = ipv6 ? NanoIPEndPoint.Any(port) : NanoIPEndPoint.IPv6Any(port);
                 try
                 {
-                    _socket.Bind(ref localEndPoint);
+                    _socket.Bind(localEndPoint);
                 }
                 catch
                 {
@@ -289,16 +289,7 @@ namespace asphyxia
                 var remoteEndPoint = _remoteEndPoint.GetHashCode();
                 do
                 {
-                    int count;
-                    try
-                    {
-                        count = _socket.Receive(_unmanagedBuffer, SOCKET_BUFFER_SIZE, ref _remoteEndPoint);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
+                    var count = _socket.ReceiveFrom(_unmanagedBuffer, SOCKET_BUFFER_SIZE, ref _remoteEndPoint);
                     var hashCode = _remoteEndPoint.GetHashCode();
                     try
                     {
@@ -400,7 +391,7 @@ namespace asphyxia
         /// </summary>
         /// <param name="endPoint">Remote endPoint</param>
         /// <param name="length">Length</param>
-        internal void Insert(NanoIPEndPoint endPoint, int length) => _socket.Send(_unmanagedBuffer, length, &endPoint);
+        internal void Insert(NanoIPEndPoint endPoint, int length) => _socket.SendTo(_unmanagedBuffer, length, &endPoint);
 
         /// <summary>
         ///     Remove

@@ -60,7 +60,7 @@ namespace asphyxia
         /// <summary>
         ///     Kcp window size max
         /// </summary>
-        public const int KCP_WINDOW_SIZE_MAX = 4608;
+        public const int KCP_WINDOW_SIZE_MAX = 6144;
 
         /// <summary>
         ///     Kcp no delay
@@ -70,12 +70,12 @@ namespace asphyxia
         /// <summary>
         ///     Kcp flush interval min
         /// </summary>
-        public const int KCP_FLUSH_INTERVAL_MIN = 10;
+        public const int KCP_FLUSH_INTERVAL_MIN = 4;
 
         /// <summary>
         ///     Kcp flush interval max
         /// </summary>
-        public const int KCP_FLUSH_INTERVAL_MAX = 30;
+        public const int KCP_FLUSH_INTERVAL_MAX = 16;
 
         /// <summary>
         ///     Kcp fast resend trigger count
@@ -95,6 +95,6 @@ namespace asphyxia
         /// <summary>
         ///     Kcp retransmission timeout max
         /// </summary>
-        public const int KCP_RTO_MAX = 120;
+        public const int KCP_RTO_MAX = 240;
     }
 }

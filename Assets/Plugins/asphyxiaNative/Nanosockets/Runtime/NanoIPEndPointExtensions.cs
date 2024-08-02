@@ -23,10 +23,9 @@ namespace asphyxia
         /// <returns>DataPacket</returns>
         public static DataPacket CreateDataPacket(this NanoIPEndPoint ipEndPoint, PacketFlag flag = PacketFlag.Reliable)
         {
-            var buffer = stackalloc byte[20];
-            ipEndPoint.Address.TryWriteBytes(new Span<byte>(buffer, 16));
-            *(int*)(buffer + 16) = ipEndPoint.Port;
-            return DataPacket.Create(buffer, 16 + 4, flag);
+            var buffer = stackalloc byte[18];
+            ipEndPoint.WriteBytes(new Span<byte>(buffer, 18));
+            return DataPacket.Create(buffer, 18, flag);
         }
 
         /// <summary>
@@ -38,11 +37,10 @@ namespace asphyxia
         /// <returns>DataPacket</returns>
         public static DataPacket CreateDataPacket(this NanoIPEndPoint ipEndPoint, int space, PacketFlag flag = PacketFlag.Reliable)
         {
-            var buffer = stackalloc byte[space + 20];
+            var buffer = stackalloc byte[space + 18];
             buffer += space;
-            ipEndPoint.Address.TryWriteBytes(new Span<byte>(buffer, 16));
-            *(int*)(buffer + 16) = ipEndPoint.Port;
-            return DataPacket.Create(buffer - space, space + 16 + 4, flag);
+            ipEndPoint.WriteBytes(new Span<byte>(buffer, 18));
+            return DataPacket.Create(buffer - space, space + 18, flag);
         }
     }
 }
