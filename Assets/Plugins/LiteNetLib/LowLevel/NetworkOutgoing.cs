@@ -3,7 +3,9 @@
 // Copyright © 2024 怨靈. All rights reserved.
 //------------------------------------------------------------
 
+#if UNITY_2021_3_OR_NEWER || GODOT
 using System;
+#endif
 
 namespace LiteNetLib
 {
