@@ -71,12 +71,9 @@ namespace KCP
     internal unsafe struct IKCPSEG
     {
         public IQUEUEHEAD node;
-        public uint cmd;
         public uint frg;
-        public uint wnd;
         public uint ts;
         public uint sn;
-        public uint una;
         public uint len;
         public uint resendts;
         public uint rto;
@@ -122,6 +119,7 @@ namespace KCP
         public const uint CMD_ACK = 82;
         public const uint CMD_WASK = 83;
         public const uint CMD_WINS = 84;
+        public const uint CMD_ACK_RANGE = 85;
         public const uint ASK_SEND = 1;
         public const uint ASK_TELL = 2;
         public const uint WND_SND = 32;
@@ -131,7 +129,7 @@ namespace KCP
         public const uint INTERVAL = 100;
         public const uint INTERVAL_MIN = 1;
         public const uint INTERVAL_LIMIT = 5000;
-        public const uint OVERHEAD = 20;
+        public const uint OVERHEAD = 14;
         public const uint DEADLINK = 20;
         public const uint THRESH_INIT = 2;
         public const uint THRESH_MIN = 2;
@@ -154,6 +152,7 @@ namespace KCP
         public const uint OUT_ACK = 512;
         public const uint OUT_PROBE = 1024;
         public const uint OUT_WINS = 2048;
+        public const uint REVERSED_OVERHEAD = 10;
         public const uint REVERSED_HEAD = 1;
     }
 }

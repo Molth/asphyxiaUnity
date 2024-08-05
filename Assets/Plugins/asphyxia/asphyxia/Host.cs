@@ -14,6 +14,7 @@ using System.Security.Cryptography;
 using static asphyxia.Settings;
 using static asphyxia.Time;
 using static asphyxia.PacketFlag;
+using static System.Runtime.InteropServices.RuntimeInformation;
 using static System.Runtime.InteropServices.Marshal;
 using static KCP.KCPBASIC;
 
@@ -196,7 +197,7 @@ namespace asphyxia
                     return SocketError.AddressAlreadyInUse;
                 }
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (IsOSPlatform(OSPlatform.Windows))
                     _socket.IOControl(-1744830452, new byte[1], null);
 #if NET8_0_OR_GREATER
                 if (_remoteEndPoint == null || _remoteEndPoint.Family != _socket.AddressFamily)
@@ -380,16 +381,15 @@ namespace asphyxia
 
                         if ((flags & (int)Reliable) != 0)
                         {
-                            if (count < (int)REVERSED_HEAD + (int)OVERHEAD)
+                            if (count < (int)REVERSED_HEAD + (int)REVERSED_OVERHEAD)
                             {
-                                if (count == 3 && _managedBuffer[0] == (byte)Header.Disconnect && _managedBuffer[1] == (byte)Header.DisconnectAcknowledge)
+                                if (count == 3 && _unmanagedBuffer[0] == (byte)Header.Disconnect && _unmanagedBuffer[1] == (byte)Header.DisconnectAcknowledge)
                                 {
                                     if ((_peer == null || hashCode != remoteEndPoint) && !_peers.TryGetValue(hashCode, out _peer))
                                         continue;
-                                    _peer.TryDisconnectNow(_managedBuffer[2]);
+                                    _peer.TryDisconnectNow(_unmanagedBuffer[2]);
+                                    continue;
                                 }
-
-                                continue;
                             }
 
                             if ((_peer == null || hashCode != remoteEndPoint) && !_peers.TryGetValue(hashCode, out _peer))

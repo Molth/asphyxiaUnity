@@ -290,6 +290,8 @@ namespace asphyxia
                 do
                 {
                     var count = _socket.ReceiveFrom(_unmanagedBuffer, SOCKET_BUFFER_SIZE, ref _remoteEndPoint);
+                    if (count <= 0)
+                        continue;
                     var hashCode = _remoteEndPoint.GetHashCode();
                     try
                     {
@@ -313,16 +315,15 @@ namespace asphyxia
 
                         if ((flags & (int)Reliable) != 0)
                         {
-                            if (count < (int)REVERSED_HEAD + (int)OVERHEAD)
+                            if (count < (int)REVERSED_HEAD + (int)REVERSED_OVERHEAD)
                             {
                                 if (count == 3 && _unmanagedBuffer[0] == (byte)Header.Disconnect && _unmanagedBuffer[1] == (byte)Header.DisconnectAcknowledge)
                                 {
                                     if ((_peer == null || hashCode != remoteEndPoint) && !_peers.TryGetValue(hashCode, out _peer))
                                         continue;
                                     _peer.TryDisconnectNow(_unmanagedBuffer[2]);
+                                    continue;
                                 }
-
-                                continue;
                             }
 
                             if ((_peer == null || hashCode != remoteEndPoint) && !_peers.TryGetValue(hashCode, out _peer))

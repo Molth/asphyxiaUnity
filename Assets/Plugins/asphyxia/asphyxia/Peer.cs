@@ -555,8 +555,12 @@ namespace asphyxia
                         rto = KCP_RTO_MAX;
                     if (interval > KCP_FLUSH_INTERVAL_MAX)
                         interval = KCP_FLUSH_INTERVAL_MAX;
+                    else if (interval < KCP_FLUSH_INTERVAL_MIN)
+                        interval = KCP_FLUSH_INTERVAL_MIN;
                     if (windowSize < KCP_WINDOW_SIZE_MIN)
                         windowSize = KCP_WINDOW_SIZE_MIN;
+                    else if (windowSize > KCP_WINDOW_SIZE_MAX)
+                        windowSize = KCP_WINDOW_SIZE_MAX;
                     _kcp.SetMinrto(rto);
                     _kcp.SetInterval(interval);
                     _kcp.SetWindowSize(windowSize, (windowSize + (windowSize << 1)) >> 1);
