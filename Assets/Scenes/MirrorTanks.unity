@@ -539,31 +539,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1282001517}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ef043e920f14e0f9a932f0b54e0fe98, type: 3}
+  m_Script: {fileID: 11500000, guid: 3a379a329a6e9b348976dacf18a4607f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  IsServer: 0
-  ServiceIPAddress: 127.0.0.1
-  ServicePort: 7778
-  port: 7777
-  DebugDisplay: 0
-  LogType: 0
-  serverBindsAll: 1
-  serverBindAddress: 
-  serverMaxPeerCapacity: 64
-  serverMaxNativeWaitTime: 1
-  serverStatusUpdateInterval: 0
-  clientMaxNativeWaitTime: 1
-  clientUseCustomNativeTimeout: 0
-  clientMaxNativeTimeout: 15
-  clientStatusUpdateInterval: 0
-  Channels: 0100000002000000
-  ServerDataBufferSize: 5000
-  ServerConnEventBufferSize: 100
-  ClientDataBufferSize: 1000
-  ClientConnEventBufferSize: 10
-  PacketBufferCapacity: 4096
-  MaxAllowedPacketSize: 33554432
+  MaxPeers: 100
 --- !u!1 &1458789072
 GameObject:
   m_ObjectHideFlags: 0

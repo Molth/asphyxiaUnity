@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/MirrorTanks.unity
-    guid: 64615b57e4849574ab9811d212728db9
+    path: Assets/Scenes/FishNetTanks.unity
+    guid: c94dcb4f1c0b54f4ca31de72ef59bc05
   m_configObjects: {}

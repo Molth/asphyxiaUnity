@@ -340,8 +340,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1282001518}
   - component: {fileID: 1282001519}
-  - component: {fileID: 1282001521}
-  - component: {fileID: 1282001522}
+  - component: {fileID: 1282001524}
+  - component: {fileID: 1282001523}
+  - component: {fileID: 1282001525}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -378,7 +379,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   NetworkConfig:
     ProtocolVersion: 0
-    NetworkTransport: {fileID: 1282001522}
+    NetworkTransport: {fileID: 1282001525}
     PlayerPrefab: {fileID: 1916082411674582, guid: a20be31936b29fe45b5115a8f138aef5, type: 3}
     Prefabs:
       NetworkPrefabsLists:
@@ -401,7 +402,7 @@ MonoBehaviour:
     OldPrefabList: []
   RunInBackground: 1
   LogLevel: 1
---- !u!114 &1282001521
+--- !u!114 &1282001523
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -410,12 +411,28 @@ MonoBehaviour:
   m_GameObject: {fileID: 1282001517}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5367593cea7491f978ffb069c14a2d1, type: 3}
+  m_Script: {fileID: 11500000, guid: d0d08949b53348729121cf9df7593f20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  color: {r: 1, g: 1, b: 1, a: 1}
+  padding: 2
+  width: 150
+  height: 25
+--- !u!114 &1282001524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1282001517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 004c005ed3bf45e38d44309eb388e306, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _offsetX: 0
   _offsetY: 0
---- !u!114 &1282001522
+--- !u!114 &1282001525
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -424,7 +441,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1282001517}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a6bcd812fa6c4f54948b7c22a1009e5a, type: 3}
+  m_Script: {fileID: 11500000, guid: a737951ac2b549a390b7c065816e6866, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_ProtocolType: 0
@@ -437,17 +454,12 @@ MonoBehaviour:
   ConnectionData:
     Address: 127.0.0.1
     Port: 7777
-    ServerListenAddress: 0.0.0.0
+    ServerListenAddress: 127.0.0.1
   DebugSimulator:
     PacketDelayMS: 0
     PacketJitterMS: 0
     PacketDropRate: 0
-  ServiceId: 0
-  ServiceData:
-    Address: 127.0.0.1
-    Port: 7778
-    ServerListenAddress: 
-  LocalEndPoint: 
+  MaxPeers: 100
 --- !u!1 &2054208274
 GameObject:
   m_ObjectHideFlags: 0

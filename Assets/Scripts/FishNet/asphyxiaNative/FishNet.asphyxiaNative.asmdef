@@ -1,0 +1,17 @@
+{
+    "name": "FishNet.asphyxiaNative",
+    "rootNamespace": "",
+    "references": [
+        "GUID:cba851ffce348cf469ae6cfb621d055b",
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
