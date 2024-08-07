@@ -1,0 +1,16 @@
+{
+    "name": "Netick.asphyxiaNative",
+    "rootNamespace": "",
+    "references": [
+        "GUID:cba851ffce348cf469ae6cfb621d055b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

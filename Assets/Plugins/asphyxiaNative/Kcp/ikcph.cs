@@ -116,10 +116,13 @@ namespace KCP
         public const uint RTO_DEF = 200;
         public const uint RTO_MAX = 60000;
         public const uint CMD_PUSH = 81;
-        public const uint CMD_ACK = 82;
-        public const uint CMD_WASK = 83;
-        public const uint CMD_WINS = 84;
-        public const uint CMD_ACK_RANGE = 85;
+        public const uint CMD_PUSH_NEXT = 82;
+        public const uint CMD_PUSH_NONFRG = 83;
+        public const uint CMD_PUSH_NONFRG_NEXT = 84;
+        public const uint CMD_ACK = 85;
+        public const uint CMD_ACK_RANGE = 86;
+        public const uint CMD_WASK = 87;
+        public const uint CMD_WINS = 88;
         public const uint ASK_SEND = 1;
         public const uint ASK_TELL = 2;
         public const uint WND_SND = 32;
@@ -129,7 +132,7 @@ namespace KCP
         public const uint INTERVAL = 100;
         public const uint INTERVAL_MIN = 1;
         public const uint INTERVAL_LIMIT = 5000;
-        public const uint OVERHEAD = 14;
+        public const uint OVERHEAD = 8;
         public const uint DEADLINK = 20;
         public const uint THRESH_INIT = 2;
         public const uint THRESH_MIN = 2;

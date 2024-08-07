@@ -575,42 +575,31 @@ namespace KCP
                 ts[0] = kcp->acklist[p * 2 + 1];
         }
 
-        private static void ikcp_parse_data(IKCPCB* kcp, IKCPSEG* newseg)
+        private static void ikcp_parse_data(IKCPCB* kcp, byte* frg, uint* ts, uint* sn, ushort* len, byte* data)
         {
-            var sn = newseg->sn;
-            if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) >= 0 || _itimediff(sn, kcp->rcv_nxt) < 0)
-            {
-                ikcp_segment_delete(kcp, newseg);
+            if (_itimediff(*sn, kcp->rcv_nxt + kcp->rcv_wnd) >= 0 || _itimediff(*sn, kcp->rcv_nxt) < 0)
                 return;
-            }
-
             IQUEUEHEAD* p, prev;
-            var repeat = 0;
             for (p = kcp->rcv_buf.prev; p != &kcp->rcv_buf; p = prev)
             {
                 var seg = iqueue_entry(p);
                 prev = p->prev;
-                if (seg->sn == sn)
-                {
-                    repeat = 1;
-                    break;
-                }
-
-                if (_itimediff(sn, seg->sn) > 0)
+                if (seg->sn == *sn)
+                    return;
+                if (_itimediff(*sn, seg->sn) > 0)
                     break;
             }
 
-            if (repeat == 0)
-            {
-                iqueue_init(&newseg->node);
-                iqueue_add(&newseg->node, p);
-                kcp->nrcv_buf++;
-            }
-            else
-            {
-                ikcp_segment_delete(kcp, newseg);
-            }
-
+            var newseg = ikcp_segment_new(kcp, *len);
+            newseg->frg = *frg;
+            newseg->ts = *ts;
+            newseg->sn = *sn;
+            newseg->len = *len;
+            if (*len > 0)
+                memcpy(newseg->data, data, *len);
+            iqueue_init(&newseg->node);
+            iqueue_add(&newseg->node, p);
+            kcp->nrcv_buf++;
             while (!iqueue_is_empty(&kcp->rcv_buf))
             {
                 var seg = iqueue_entry(kcp->rcv_buf.next);
@@ -637,19 +626,22 @@ namespace KCP
             uint maxack = 0, latest_ts = 0;
             var flag = 0;
             ushort wnd;
-            uint current;
+            uint rmt_ts;
             uint una;
             data = ikcp_decode16u(data, &wnd);
-            data = ikcp_decode32u(data, &current);
+            data = ikcp_decode32u(data, &rmt_ts);
             data = ikcp_decode32u(data, &una);
             kcp->rmt_wnd = wnd;
             ikcp_parse_una(kcp, una);
             ikcp_shrink_buf(kcp);
+            uint last_sn = 0;
             while (true)
             {
                 if (size < 1)
-                    goto label;
-                byte cmd;
+                    break;
+                ushort len;
+                byte cmd, frg;
+                uint ts;
                 uint sn;
                 data = ikcp_decode8u(data, &cmd);
                 size--;
@@ -659,7 +651,6 @@ namespace KCP
                         if (size < 8)
                             return -2;
                         size -= 8;
-                        uint ts;
                         data = ikcp_decode32u(data, &ts);
                         data = ikcp_decode32u(data, &sn);
                         if (_itimediff(kcp->current, ts) >= 0)
@@ -709,19 +700,22 @@ namespace KCP
                         }
                         else
                         {
+#if KCP_FASTACK_CONSERVE
+                            if (_itimediff(right_sn, maxack) > 0)
+                            {
+                                maxack = right_sn;
+                                latest_ts = ts;
+                            }
+#else
                             if (_itimediff(left_sn, maxack) > 0)
                             {
-#if KCP_FASTACK_CONSERVE
-                                maxack = left_sn;
-                                latest_ts = ts;
-#else
                                 if (_itimediff(ts, latest_ts) > 0)
                                 {
                                     maxack = left_sn;
                                     latest_ts = ts;
                                 }
-#endif
                             }
+#endif
                         }
 
                         for (sn = left_sn; sn <= right_sn; sn++)
@@ -732,31 +726,81 @@ namespace KCP
 
                         continue;
                     case (byte)CMD_PUSH:
-                        if (size < 9)
+                        if (size < 7)
                             return -2;
-                        size -= 9;
-                        byte frg;
-                        uint len;
+                        size -= 7;
                         data = ikcp_decode8u(data, &frg);
                         data = ikcp_decode32u(data, &sn);
-                        data = ikcp_decode32u(data, &len);
-                        if (size < len || (int)len < 0)
+                        data = ikcp_decode16u(data, &len);
+                        if (size < len || len < 0)
                             return -2;
-                        size -= (int)len;
+                        size -= len;
+                        last_sn = sn;
                         if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) < 0)
                         {
-                            ikcp_ack_push(kcp, sn, current);
+                            ikcp_ack_push(kcp, sn, rmt_ts);
                             if (_itimediff(sn, kcp->rcv_nxt) >= 0)
-                            {
-                                var seg = ikcp_segment_new(kcp, (int)len);
-                                seg->frg = frg;
-                                seg->ts = current;
-                                seg->sn = sn;
-                                seg->len = len;
-                                if (len > 0)
-                                    memcpy(seg->data, data, len);
-                                ikcp_parse_data(kcp, seg);
-                            }
+                                ikcp_parse_data(kcp, &frg, &rmt_ts, &sn, &len, data);
+                        }
+
+                        data += len;
+                        continue;
+                    case (byte)CMD_PUSH_NEXT:
+                        if (size < 3)
+                            return -2;
+                        size -= 3;
+                        data = ikcp_decode8u(data, &frg);
+                        data = ikcp_decode16u(data, &len);
+                        if (size < len || len < 0)
+                            return -2;
+                        size -= len;
+                        last_sn++;
+                        sn = last_sn;
+                        if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) < 0)
+                        {
+                            ikcp_ack_push(kcp, sn, rmt_ts);
+                            if (_itimediff(sn, kcp->rcv_nxt) >= 0)
+                                ikcp_parse_data(kcp, &frg, &rmt_ts, &sn, &len, data);
+                        }
+
+                        data += len;
+                        continue;
+                    case (byte)CMD_PUSH_NONFRG:
+                        if (size < 6)
+                            return -2;
+                        size -= 6;
+                        data = ikcp_decode32u(data, &sn);
+                        data = ikcp_decode16u(data, &len);
+                        if (size < len || len < 0)
+                            return -2;
+                        size -= len;
+                        frg = 0;
+                        last_sn = sn;
+                        if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) < 0)
+                        {
+                            ikcp_ack_push(kcp, sn, rmt_ts);
+                            if (_itimediff(sn, kcp->rcv_nxt) >= 0)
+                                ikcp_parse_data(kcp, &frg, &rmt_ts, &sn, &len, data);
+                        }
+
+                        data += len;
+                        continue;
+                    case (byte)CMD_PUSH_NONFRG_NEXT:
+                        if (size < 2)
+                            return -2;
+                        size -= 2;
+                        data = ikcp_decode16u(data, &len);
+                        if (size < len || len < 0)
+                            return -2;
+                        size -= len;
+                        frg = 0;
+                        last_sn++;
+                        sn = last_sn;
+                        if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) < 0)
+                        {
+                            ikcp_ack_push(kcp, sn, rmt_ts);
+                            if (_itimediff(sn, kcp->rcv_nxt) >= 0)
+                                ikcp_parse_data(kcp, &frg, &rmt_ts, &sn, &len, data);
                         }
 
                         data += len;
@@ -771,7 +815,6 @@ namespace KCP
                 }
             }
 
-            label:
             if (flag != 0)
                 ikcp_parse_fastack(kcp, maxack, latest_ts);
             if (_itimediff(kcp->snd_una, prev_una) > 0)
@@ -809,7 +852,30 @@ namespace KCP
             ptr = ikcp_encode8u(ptr, (byte)CMD_PUSH);
             ptr = ikcp_encode8u(ptr, (byte)seg->frg);
             ptr = ikcp_encode32u(ptr, seg->sn);
-            ptr = ikcp_encode32u(ptr, seg->len);
+            ptr = ikcp_encode16u(ptr, (ushort)seg->len);
+            return ptr;
+        }
+
+        private static byte* ikcp_encode_seg_next(byte* ptr, IKCPSEG* seg)
+        {
+            ptr = ikcp_encode8u(ptr, (byte)CMD_PUSH_NEXT);
+            ptr = ikcp_encode8u(ptr, (byte)seg->frg);
+            ptr = ikcp_encode16u(ptr, (ushort)seg->len);
+            return ptr;
+        }
+
+        private static byte* ikcp_encode_seg_nonfrg(byte* ptr, IKCPSEG* seg)
+        {
+            ptr = ikcp_encode8u(ptr, (byte)CMD_PUSH_NONFRG);
+            ptr = ikcp_encode32u(ptr, seg->sn);
+            ptr = ikcp_encode16u(ptr, (ushort)seg->len);
+            return ptr;
+        }
+
+        private static byte* ikcp_encode_seg_nonfrg_next(byte* ptr, IKCPSEG* seg)
+        {
+            ptr = ikcp_encode8u(ptr, (byte)CMD_PUSH_NONFRG_NEXT);
+            ptr = ikcp_encode16u(ptr, (ushort)seg->len);
             return ptr;
         }
 
@@ -842,17 +908,20 @@ namespace KCP
                 var count = (int)kcp->ackcount;
                 if (count == 1)
                 {
-                    size = (int)(ptr - buffer);
-                    if (size + 9 > (int)kcp->mtu)
-                    {
-                        ikcp_output(output, size, current);
-                        ptr = buffer;
-                    }
-
                     ikcp_ack_get(kcp, 0, &sn, &ts);
-                    ptr = ikcp_encode8u(ptr, (byte)CMD_ACK);
-                    ptr = ikcp_encode32u(ptr, ts);
-                    ptr = ikcp_encode32u(ptr, sn);
+                    if (sn > una)
+                    {
+                        size = (int)(ptr - buffer);
+                        if (size + 9 > (int)kcp->mtu)
+                        {
+                            ikcp_output(output, size, current);
+                            ptr = buffer;
+                        }
+
+                        ptr = ikcp_encode8u(ptr, (byte)CMD_ACK);
+                        ptr = ikcp_encode32u(ptr, ts);
+                        ptr = ikcp_encode32u(ptr, sn);
+                    }
                 }
                 else if (count > 1)
                 {
@@ -863,6 +932,8 @@ namespace KCP
                     for (var i = 1; i < count; i++)
                     {
                         ikcp_ack_get(kcp, i, &sn, &ts);
+                        if (sn <= una)
+                            continue;
                         if (ts == last_ts && sn == right_sn + 1)
                         {
                             right_sn = sn;
@@ -884,17 +955,20 @@ namespace KCP
                             }
                             else
                             {
-                                size = (int)(ptr - buffer);
-                                if (size + 13 > (int)kcp->mtu)
+                                if (left_sn > una)
                                 {
-                                    ikcp_output(output, size, current);
-                                    ptr = buffer;
-                                }
+                                    size = (int)(ptr - buffer);
+                                    if (size + 13 > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
 
-                                ptr = ikcp_encode8u(ptr, (byte)CMD_ACK_RANGE);
-                                ptr = ikcp_encode32u(ptr, last_ts);
-                                ptr = ikcp_encode32u(ptr, left_sn);
-                                ptr = ikcp_encode32u(ptr, right_sn);
+                                    ptr = ikcp_encode8u(ptr, (byte)CMD_ACK_RANGE);
+                                    ptr = ikcp_encode32u(ptr, last_ts);
+                                    ptr = ikcp_encode32u(ptr, left_sn);
+                                    ptr = ikcp_encode32u(ptr, right_sn);
+                                }
                             }
 
                             last_ts = ts;
@@ -903,31 +977,34 @@ namespace KCP
                         }
                     }
 
-                    size = (int)(ptr - buffer);
-                    if (left_sn == right_sn)
+                    if (left_sn > una)
                     {
-                        if (size + 9 > (int)kcp->mtu)
+                        size = (int)(ptr - buffer);
+                        if (left_sn == right_sn)
                         {
-                            ikcp_output(output, size, current);
-                            ptr = buffer;
-                        }
+                            if (size + 9 > (int)kcp->mtu)
+                            {
+                                ikcp_output(output, size, current);
+                                ptr = buffer;
+                            }
 
-                        ptr = ikcp_encode8u(ptr, (byte)CMD_ACK);
-                        ptr = ikcp_encode32u(ptr, last_ts);
-                        ptr = ikcp_encode32u(ptr, left_sn);
-                    }
-                    else
-                    {
-                        if (size + 13 > (int)kcp->mtu)
+                            ptr = ikcp_encode8u(ptr, (byte)CMD_ACK);
+                            ptr = ikcp_encode32u(ptr, last_ts);
+                            ptr = ikcp_encode32u(ptr, left_sn);
+                        }
+                        else
                         {
-                            ikcp_output(output, size, current);
-                            ptr = buffer;
-                        }
+                            if (size + 13 > (int)kcp->mtu)
+                            {
+                                ikcp_output(output, size, current);
+                                ptr = buffer;
+                            }
 
-                        ptr = ikcp_encode8u(ptr, (byte)CMD_ACK_RANGE);
-                        ptr = ikcp_encode32u(ptr, last_ts);
-                        ptr = ikcp_encode32u(ptr, left_sn);
-                        ptr = ikcp_encode32u(ptr, right_sn);
+                            ptr = ikcp_encode8u(ptr, (byte)CMD_ACK_RANGE);
+                            ptr = ikcp_encode32u(ptr, last_ts);
+                            ptr = ikcp_encode32u(ptr, left_sn);
+                            ptr = ikcp_encode32u(ptr, right_sn);
+                        }
                     }
                 }
 
@@ -1005,6 +1082,9 @@ namespace KCP
                 }
 
                 var resent = kcp->fastresend > 0 ? (uint)kcp->fastresend : 4294967295;
+                var flag = 0;
+                uint last_sn = 0;
+                int need;
                 if (kcp->nodelay == 0)
                 {
                     var rtomin = (uint)(kcp->rx_rto >> 3);
@@ -1044,14 +1124,98 @@ namespace KCP
                         {
                             segment->ts = current;
                             size = (int)(ptr - buffer);
-                            var need = (int)(OVERHEAD + segment->len);
-                            if (size + need > (int)kcp->mtu)
+                            if (flag == 0)
                             {
-                                ikcp_output(output, size, current);
-                                ptr = buffer;
+                                if (segment->frg == 0)
+                                {
+                                    need = (int)(OVERHEAD - 1 + segment->len);
+                                    if (size + need > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
+                                    else
+                                    {
+                                        flag = 1;
+                                    }
+
+                                    ptr = ikcp_encode_seg_nonfrg(ptr, segment);
+                                }
+                                else
+                                {
+                                    need = (int)(OVERHEAD + segment->len);
+                                    if (size + need > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
+                                    else
+                                    {
+                                        flag = 1;
+                                    }
+
+                                    ptr = ikcp_encode_seg(ptr, segment);
+                                }
+                            }
+                            else
+                            {
+                                if (segment->sn != last_sn + 1)
+                                {
+                                    if (segment->frg == 0)
+                                    {
+                                        need = (int)(OVERHEAD - 1 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_nonfrg(ptr, segment);
+                                    }
+                                    else
+                                    {
+                                        need = (int)(OVERHEAD + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg(ptr, segment);
+                                    }
+                                }
+                                else
+                                {
+                                    if (segment->frg == 0)
+                                    {
+                                        need = (int)(OVERHEAD - 1 - 4 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_nonfrg_next(ptr, segment);
+                                    }
+                                    else
+                                    {
+                                        need = (int)(OVERHEAD - 4 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_next(ptr, segment);
+                                    }
+                                }
                             }
 
-                            ptr = ikcp_encode_seg(ptr, segment);
+                            last_sn = segment->sn;
                             if (segment->len > 0)
                             {
                                 memcpy(ptr, segment->data, segment->len);
@@ -1102,14 +1266,98 @@ namespace KCP
                         {
                             segment->ts = current;
                             size = (int)(ptr - buffer);
-                            var need = (int)(OVERHEAD + segment->len);
-                            if (size + need > (int)kcp->mtu)
+                            if (flag == 0)
                             {
-                                ikcp_output(output, size, current);
-                                ptr = buffer;
+                                if (segment->frg == 0)
+                                {
+                                    need = (int)(OVERHEAD - 1 + segment->len);
+                                    if (size + need > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
+                                    else
+                                    {
+                                        flag = 1;
+                                    }
+
+                                    ptr = ikcp_encode_seg_nonfrg(ptr, segment);
+                                }
+                                else
+                                {
+                                    need = (int)(OVERHEAD + segment->len);
+                                    if (size + need > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
+                                    else
+                                    {
+                                        flag = 1;
+                                    }
+
+                                    ptr = ikcp_encode_seg(ptr, segment);
+                                }
+                            }
+                            else
+                            {
+                                if (segment->sn != last_sn + 1)
+                                {
+                                    if (segment->frg == 0)
+                                    {
+                                        need = (int)(OVERHEAD - 1 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_nonfrg(ptr, segment);
+                                    }
+                                    else
+                                    {
+                                        need = (int)(OVERHEAD + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg(ptr, segment);
+                                    }
+                                }
+                                else
+                                {
+                                    if (segment->frg == 0)
+                                    {
+                                        need = (int)(OVERHEAD - 1 - 4 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_nonfrg_next(ptr, segment);
+                                    }
+                                    else
+                                    {
+                                        need = (int)(OVERHEAD - 4 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_next(ptr, segment);
+                                    }
+                                }
                             }
 
-                            ptr = ikcp_encode_seg(ptr, segment);
+                            last_sn = segment->sn;
                             if (segment->len > 0)
                             {
                                 memcpy(ptr, segment->data, segment->len);
@@ -1160,14 +1408,98 @@ namespace KCP
                         {
                             segment->ts = current;
                             size = (int)(ptr - buffer);
-                            var need = (int)(OVERHEAD + segment->len);
-                            if (size + need > (int)kcp->mtu)
+                            if (flag == 0)
                             {
-                                ikcp_output(output, size, current);
-                                ptr = buffer;
+                                if (segment->frg == 0)
+                                {
+                                    need = (int)(OVERHEAD - 1 + segment->len);
+                                    if (size + need > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
+                                    else
+                                    {
+                                        flag = 1;
+                                    }
+
+                                    ptr = ikcp_encode_seg_nonfrg(ptr, segment);
+                                }
+                                else
+                                {
+                                    need = (int)(OVERHEAD + segment->len);
+                                    if (size + need > (int)kcp->mtu)
+                                    {
+                                        ikcp_output(output, size, current);
+                                        ptr = buffer;
+                                    }
+                                    else
+                                    {
+                                        flag = 1;
+                                    }
+
+                                    ptr = ikcp_encode_seg(ptr, segment);
+                                }
+                            }
+                            else
+                            {
+                                if (segment->sn != last_sn + 1)
+                                {
+                                    if (segment->frg == 0)
+                                    {
+                                        need = (int)(OVERHEAD - 1 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_nonfrg(ptr, segment);
+                                    }
+                                    else
+                                    {
+                                        need = (int)(OVERHEAD + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg(ptr, segment);
+                                    }
+                                }
+                                else
+                                {
+                                    if (segment->frg == 0)
+                                    {
+                                        need = (int)(OVERHEAD - 1 - 4 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_nonfrg_next(ptr, segment);
+                                    }
+                                    else
+                                    {
+                                        need = (int)(OVERHEAD - 4 + segment->len);
+                                        if (size + need > (int)kcp->mtu)
+                                        {
+                                            flag = 0;
+                                            ikcp_output(output, size, current);
+                                            ptr = buffer;
+                                        }
+
+                                        ptr = ikcp_encode_seg_next(ptr, segment);
+                                    }
+                                }
                             }
 
-                            ptr = ikcp_encode_seg(ptr, segment);
+                            last_sn = segment->sn;
                             if (segment->len > 0)
                             {
                                 memcpy(ptr, segment->data, segment->len);

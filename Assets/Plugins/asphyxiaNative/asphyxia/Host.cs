@@ -15,6 +15,7 @@ using static asphyxia.Time;
 using static asphyxia.PacketFlag;
 using static System.Runtime.InteropServices.Marshal;
 using static KCP.KCPBASIC;
+using Socket = System.Net.Sockets.Socket;
 
 #pragma warning disable CA1816
 #pragma warning disable CS0162
@@ -328,7 +329,7 @@ namespace asphyxia
 
                             if ((_peer == null || hashCode != remoteEndPoint) && !_peers.TryGetValue(hashCode, out _peer))
                             {
-                                if (count != 22 || _unmanagedBuffer[21] != (byte)Header.Connect || _peers.Count >= _maxPeers)
+                                if (count != 19 || _unmanagedBuffer[18] != (byte)Header.Connect || _peers.Count >= _maxPeers)
                                     continue;
                                 _peer = new Peer(_unmanagedBuffer[0], this, _idPool.TryDequeue(out var id) ? id : _id++, _remoteEndPoint, _unmanagedBuffer, current);
                                 _peers[hashCode] = _peer;

@@ -380,7 +380,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (log)
             {
                 string dirtiedMessage = (newCount > 0) ? GetDirtiedMessage(settings, dirtied) : string.Empty;
-                UnityDebug.Log($"Default prefab generator found {newCount} prefabs in {sw.ElapsedMilliseconds}ms.{dirtiedMessage}");
+//                UnityDebug.Log($"Default prefab generator found {newCount} prefabs in {sw.ElapsedMilliseconds}ms.{dirtiedMessage}");
             }
             //Only set dirty if and save if prefabs were found.
             if (newCount > 0)
